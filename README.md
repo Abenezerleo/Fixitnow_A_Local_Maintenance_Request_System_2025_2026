@@ -15,10 +15,13 @@ Residents – Submit and track maintenance requests. Service Providers – View 
 
 Presentation Layer: UI components (Widgets, States, and Events). Application Layer: Business logic handled with Bloc Use Cases. Domain Layer: Core logic with Entities & Validation. Infrastructure Layer: Remote Data Source: REST API
 
-Group Members
-Name	Student ID
-Abenezer Elias	UGR/3180/15
-Blen Gebre	UGR/0847/15
-Henok Yonas	UGR/4016/15
-Samuel Teferi	UGR/1535/15
-Yeabsira Yibeltal	UGR/5562/15
+## Group Members
+
+| No. | Name               | Student ID   |
+|---- |------------------ |-------------|
+| 1   | Abenezer Elias    | UGR/3180/15 |
+| 2   | Blen Gebre        | UGR/0847/15 |
+| 3   | Henok Yonas       | UGR/4016/15 |
+| 4   | Samuel Teferi     | UGR/1535/15 |
+| 5   | Yeabsira Yibeltal | UGR/5562/15 |
+
