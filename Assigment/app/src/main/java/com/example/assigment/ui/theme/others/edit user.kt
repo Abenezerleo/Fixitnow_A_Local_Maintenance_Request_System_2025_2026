@@ -18,9 +18,15 @@ fun EditUserScreen(user: User, onSave: (User) -> Unit, onCancel: () -> Unit) {
     var name by remember { mutableStateOf(user.name) }
     var email by remember { mutableStateOf(user.email) }
     var phone by remember { mutableStateOf(user.phoneNumber ?: "") }
-    var password by remember { mutableStateOf(user.password) }
     var userType by remember { mutableStateOf<UserType>(user.userType) }
     var userTypeExpanded by remember { mutableStateOf(false) }
+
+    // Validation
+    val isEmailValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() && email.endsWith("@gmail.com", ignoreCase = true)
+    val emailError = if (!isEmailValid) "Email must be a valid @gmail.com address" else null
+    val isPhoneValid = phone.length == 10 && phone.all { it.isDigit() }
+    val phoneError = if (!isPhoneValid) "Phone number must be exactly 10 digits" else null
+    val isFormValid = isEmailValid && isPhoneValid && name.isNotBlank()
 
     Column(
         modifier = Modifier
@@ -42,13 +48,8 @@ fun EditUserScreen(user: User, onSave: (User) -> Unit, onCancel: () -> Unit) {
             value = email,
             onValueChange = { email = it },
             label = { Text("Email") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        TextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Password") },
+            isError = emailError != null,
+            supportingText = { if (emailError != null) Text(emailError, color = Color.Red) },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -56,6 +57,8 @@ fun EditUserScreen(user: User, onSave: (User) -> Unit, onCancel: () -> Unit) {
             value = phone,
             onValueChange = { phone = it },
             label = { Text("Phone") },
+            isError = phoneError != null,
+            supportingText = { if (phoneError != null) Text(phoneError, color = Color.Red) },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -97,12 +100,12 @@ fun EditUserScreen(user: User, onSave: (User) -> Unit, onCancel: () -> Unit) {
                         user.copy(
                             name = name,
                             email = email,
-                            password = password,
                             phoneNumber = phone,
                             userType = userType
                         )
                     )
                 },
+                enabled = isFormValid,
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006400))
             ) {

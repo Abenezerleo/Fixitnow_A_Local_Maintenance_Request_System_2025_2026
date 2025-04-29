@@ -30,6 +30,13 @@ fun EditProviderScreen(provider: ServiceProvider, onSave: (ServiceProvider) -> U
     val genderOptions = listOf("Male", "Female")
     val serviceTypeOptions = ServiceType.values().toList()
 
+    // Validation
+    val isEmailValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() && email.endsWith("@gmail.com", ignoreCase = true)
+    val emailError = if (!isEmailValid) "Email must be a valid @gmail.com address" else null
+    val isPhoneValid = phone.length == 10 && phone.all { it.isDigit() }
+    val phoneError = if (!isPhoneValid) "Phone number must be exactly 10 digits" else null
+    val isFormValid = isEmailValid && isPhoneValid && name.isNotBlank()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -50,6 +57,8 @@ fun EditProviderScreen(provider: ServiceProvider, onSave: (ServiceProvider) -> U
             value = email,
             onValueChange = { email = it },
             label = { Text("Email") },
+            isError = emailError != null,
+            supportingText = { if (emailError != null) Text(emailError, color = Color.Red) },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -57,6 +66,8 @@ fun EditProviderScreen(provider: ServiceProvider, onSave: (ServiceProvider) -> U
             value = phone,
             onValueChange = { phone = it },
             label = { Text("Phone") },
+            isError = phoneError != null,
+            supportingText = { if (phoneError != null) Text(phoneError, color = Color.Red) },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -122,6 +133,7 @@ fun EditProviderScreen(provider: ServiceProvider, onSave: (ServiceProvider) -> U
                         )
                     )
                 },
+                enabled = isFormValid,
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006400))
             ) {

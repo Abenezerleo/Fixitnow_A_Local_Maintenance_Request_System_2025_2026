@@ -19,17 +19,15 @@ fun AddUserScreen(onSave: (User) -> Unit, onCancel: () -> Unit) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
     var userType by remember { mutableStateOf<UserType>(UserType.Male) }
     var userTypeExpanded by remember { mutableStateOf(false) }
 
-    val isEmailValid = email.contains("@gmail.com", ignoreCase = true)
-    val emailError = if (!isEmailValid) "Email must contain @gmail.com" else null
-
-    val isPhoneValid = phone.length <= 10
-    val phoneError = if (!isPhoneValid) "Phone number must not exceed 10 characters" else null
-
-    val isFormValid = isEmailValid && isPhoneValid
+    // Validation
+    val isEmailValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() && email.endsWith("@gmail.com", ignoreCase = true)
+    val emailError = if (!isEmailValid) "Email must be a valid @gmail.com address" else null
+    val isPhoneValid = phone.length == 10 && phone.all { it.isDigit() }
+    val phoneError = if (!isPhoneValid) "Phone number must be exactly 10 digits" else null
+    val isFormValid = isEmailValid && isPhoneValid && name.isNotBlank()
 
     Column(
         modifier = Modifier
@@ -53,13 +51,6 @@ fun AddUserScreen(onSave: (User) -> Unit, onCancel: () -> Unit) {
             label = { Text("Email") },
             isError = emailError != null,
             supportingText = { if (emailError != null) Text(emailError, color = Color.Red) },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        TextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Password") },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -110,18 +101,19 @@ fun AddUserScreen(onSave: (User) -> Unit, onCancel: () -> Unit) {
                         User(
                             name = name,
                             email = email,
-                            password = password,
+                            password = "",
                             phoneNumber = phone,
+                            profileImageUrl = null,
                             userType = userType,
                             DoB = Date(),
-                            reported = "No",
-                            profileImageUrl = null
+                            reported = "",
+                            isActive = true
                         )
                     )
                 },
+                enabled = isFormValid,
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006400)),
-                enabled = isFormValid
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006400))
             ) {
                 Text("Save", color = Color.White)
             }

@@ -31,6 +31,13 @@ fun AddProviderScreen(onSave: (ServiceProvider) -> Unit, onCancel: () -> Unit) {
     val genderOptions = listOf("Male", "Female")
     val serviceTypeOptions = ServiceType.values().toList()
 
+    // Validation
+    val isEmailValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() && email.endsWith("@gmail.com", ignoreCase = true)
+    val emailError = if (!isEmailValid) "Email must be a valid @gmail.com address" else null
+    val isPhoneValid = phone.length == 10 && phone.all { it.isDigit() }
+    val phoneError = if (!isPhoneValid) "Phone number must be exactly 10 digits" else null
+    val isFormValid = isEmailValid && isPhoneValid && name.isNotBlank()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -42,9 +49,9 @@ fun AddProviderScreen(onSave: (ServiceProvider) -> Unit, onCancel: () -> Unit) {
         Spacer(modifier = Modifier.height(16.dp))
         TextField(value = name, onValueChange = { name = it }, label = { Text("Name") }, modifier = Modifier.fillMaxWidth())
         Spacer(modifier = Modifier.height(8.dp))
-        TextField(value = email, onValueChange = { email = it }, label = { Text("Email") }, modifier = Modifier.fillMaxWidth())
+        TextField(value = email, onValueChange = { email = it }, label = { Text("Email") }, isError = emailError != null, supportingText = { if (emailError != null) Text(emailError, color = Color.Red) }, modifier = Modifier.fillMaxWidth())
         Spacer(modifier = Modifier.height(8.dp))
-        TextField(value = phone, onValueChange = { phone = it }, label = { Text("Phone") }, modifier = Modifier.fillMaxWidth())
+        TextField(value = phone, onValueChange = { phone = it }, label = { Text("Phone") }, isError = phoneError != null, supportingText = { if (phoneError != null) Text(phoneError, color = Color.Red) }, modifier = Modifier.fillMaxWidth())
 
         Spacer(modifier = Modifier.height(8.dp))
         // Gender dropdown
@@ -115,6 +122,7 @@ fun AddProviderScreen(onSave: (ServiceProvider) -> Unit, onCancel: () -> Unit) {
                         )
                     )
                 },
+                enabled = isFormValid,
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006400))
             ) {
