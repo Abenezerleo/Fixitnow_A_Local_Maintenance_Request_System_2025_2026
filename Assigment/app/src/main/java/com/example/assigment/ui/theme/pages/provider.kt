@@ -19,6 +19,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.assigment.ui.theme.Entity.ServiceProvider
+import com.example.assigment.ui.theme.Enum.ServiceType
+import com.example.assigment.ui.theme.Enum.StatusType
+import com.example.assigment.ui.theme.ViewModel.ServiceProviderViewModel
+import com.example.assigment.ui.theme.others.AddProviderScreen
+import com.example.assigment.ui.theme.others.EditProviderScreen
+import java.util.*
 
 // Colors (inline)
 val LightGray = Color(0xFFD3D3D3)
@@ -27,153 +35,160 @@ val White = Color(0xFFFFFFFF)
 val Black = Color(0xFF000000)
 val Green = Color(0xFF006400)
 
-data class Provider(
-    val id: Int,
-    val name: String,
-    val email: String,
-    val phone: String,
-    val emoji: String,
-    val reported: Boolean,
-    val providerType: String,
-    val rating: Float
-)
+sealed class ProviderPageState {
+    object List : ProviderPageState()
+    object Add : ProviderPageState()
+    data class Edit(val provider: ServiceProvider) : ProviderPageState()
+}
 
 @Composable
-fun ProviderScreen() {
-    val providers = remember {
-        mutableStateListOf(
-            Provider(1, "John Doe", "john@example.com", "+123456789", "👨", true, "Plumber", 4.5f),
-            Provider(2, "Jane Smith", "jane@example.com", "+987654321", "👩", false, "Electrician", 4.2f),
-            Provider(3, "Bob Johnson", "bob@example.com", "+1122334455", "👨", false, "Carpenter", 3.8f)
-        )
-    }
-
+fun ProviderScreen(viewModel: ServiceProviderViewModel = viewModel()) {
     var searchQuery by remember { mutableStateOf("") }
+    var providerPageState by remember { mutableStateOf<ProviderPageState>(ProviderPageState.List) }
+    val providers by viewModel.allProviders.collectAsState(initial = emptyList())
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(White)
-    ) {
-        Text(
-            text = "Providers",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(20.dp)
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp)
-        ) {
-            TextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
+    when (providerPageState) {
+        is ProviderPageState.List -> {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                placeholder = { Text("Search Provider...") },
-                shape = CircleShape,
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = LightGray.copy(alpha = 0.2f),
-                    unfocusedContainerColor = LightGray.copy(alpha = 0.2f)
-                )
-            )
-
-            Button(
-                onClick = { /* Add Provider */ },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Green
-                )
+                    .fillMaxSize()
+                    .background(White)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add",
-                    tint = White
+                Text(
+                    text = "Providers",
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(20.dp)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = "ADD PROVIDER", color = White)
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Available Service Providers",
-                color = Black,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            LazyColumn {
-                items(providers) { provider ->
-                    ProviderCard(
-                        provider = provider,
-                        onReportToggle = {
-                            val index = providers.indexOfFirst { it.id == provider.id }
-                            if (index != -1) {
-                                providers[index] = provider.copy(reported = !provider.reported)
-                            }
-                        }
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    TextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        placeholder = { Text("Search Provider...") },
+                        shape = CircleShape,
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = LightGray.copy(alpha = 0.2f),
+                            unfocusedContainerColor = LightGray.copy(alpha = 0.2f)
+                        )
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
 
-                    Row(
+                    Button(
+                        onClick = { providerPageState = ProviderPageState.Add },
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Green
+                        )
                     ) {
-                        OutlinedButton(
-                            onClick = { /* Edit Provider */ },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp),
-                            border = BorderStroke(1.dp, LightGray),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = White,
-                                contentColor = Black
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Edit",
-                                tint = Black
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Edit", color = Black)
-                        }
-
-                        OutlinedButton(
-                            onClick = { /* Delete Provider */ },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp),
-                            border = BorderStroke(1.dp, LightGray),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = White,
-                                contentColor = if (provider.reported) Red else Black
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete",
-                                tint = if (provider.reported) Red else Black
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                "Delete",
-                                color = if (provider.reported) Red else Black
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add",
+                            tint = White
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "ADD PROVIDER", color = White)
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Available Service Providers",
+                        color = Black,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    LazyColumn {
+                        items(providers.filter { it.name?.contains(searchQuery, ignoreCase = true) == true }) { provider ->
+                            ProviderCard(
+                                provider = provider,
+                                onReportToggle = {}
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { providerPageState = ProviderPageState.Edit(provider) },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(1.dp, LightGray),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        containerColor = White,
+                                        contentColor = Black
+                                    )
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = "Edit",
+                                        tint = Black
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Edit", color = Black)
+                                }
+
+                                OutlinedButton(
+                                    onClick = { viewModel.deleteProvider(provider) },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(1.dp, LightGray),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        containerColor = White,
+                                        contentColor = Black
+                                    )
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete",
+                                        tint = Black
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Delete", color = Black)
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+                    }
                 }
             }
+        }
+
+        is ProviderPageState.Add -> {
+            AddProviderScreen(
+                onSave = { newProvider ->
+                    viewModel.addProvider(newProvider)
+                    providerPageState = ProviderPageState.List
+                },
+                onCancel = { providerPageState = ProviderPageState.List }
+            )
+        }
+
+        is ProviderPageState.Edit -> {
+            val providerToEdit = (providerPageState as ProviderPageState.Edit).provider
+            EditProviderScreen(
+                provider = providerToEdit,
+                onSave = { updatedProvider ->
+                    viewModel.updateProvider(updatedProvider)
+                    providerPageState = ProviderPageState.List
+                },
+                onCancel = { providerPageState = ProviderPageState.List }
+            )
         }
     }
 }
 
 @Composable
-fun ProviderCard(provider: Provider, onReportToggle: () -> Unit) {
+fun ProviderCard(provider: ServiceProvider, onReportToggle: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -185,54 +200,47 @@ fun ProviderCard(provider: Provider, onReportToggle: () -> Unit) {
         border = BorderStroke(1.dp, LightGray)
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(
-                modifier = Modifier.weight(0.5f),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(LightGray.copy(alpha = 0.3f), CircleShape),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(LightGray.copy(alpha = 0.3f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = provider.emoji, style = MaterialTheme.typography.headlineMedium)
-                }
+                Text(
+                    text = if (provider.gender == "Female") "👩‍🔧" else "👨‍🔧",
+                    style = MaterialTheme.typography.headlineMedium
+                )
             }
 
+            Spacer(modifier = Modifier.width(12.dp))
+
             Column(
-                modifier = Modifier
-                    .weight(3f)
-                    .padding(horizontal = 8.dp)
+                modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = provider.name,
+                    text = provider.name ?: "",
                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = provider.providerType,
+                    text = provider.serviceType.name,
                     style = MaterialTheme.typography.bodyMedium,
                     color = LightGray
                 )
             }
 
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.End
-            ) {
-                Text(
-                    text = "${provider.rating} Stars",
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = Black
-                    )
+            Text(
+                text = "${provider.rating} Star",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = Black
                 )
-            }
+            )
         }
     }
 }
