@@ -1,11 +1,12 @@
 package com.example.assigment.ui.theme.pages
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -16,107 +17,134 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.assigment.ui.theme.Entity.User as RoomUser
+import com.example.assigment.ui.theme.ViewModel.UserViewModel
+import com.example.assigment.ui.theme.others.AddUserScreen
+import com.example.assigment.ui.theme.others.EditUserScreen
 
-data class User(
-    val id: Int,
-    val name: String,
-    val email: String,
-    val phone: String,
-    val emoji: String,
-    var reported: Boolean
-)
+// State to control which page inside UserScreen
+sealed class UserPageState {
+    object List : UserPageState()
+    object Add : UserPageState()
+    data class Edit(val user: RoomUser) : UserPageState()
+}
 
 @Composable
 fun UserScreen() {
-    val users = remember {
-        mutableStateListOf(
-            User(1, "John Doe", "john@example.com", "+123456789", "👨", false),
-            User(2, "Jane Smith", "jane@example.com", "+987654321", "👩", true),
-            User(3, "Bob Johnson", "bob@example.com", "+1122334455", "👨", false)
-        )
-    }
-
+    val viewModel: UserViewModel = viewModel()
+    val users by viewModel.allUsers.collectAsState(initial = emptyList())
     var searchQuery by remember { mutableStateOf("") }
+    var userPageState by remember { mutableStateOf<UserPageState>(UserPageState.List) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-        Text(
-            text = "Users",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(20.dp)
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp)
-        ) {
-            TextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
+    when (val state = userPageState) {
+        is UserPageState.List -> {
+            // Main List Screen
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                placeholder = { Text("Search users...") },
-                shape = CircleShape,
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.LightGray.copy(alpha = 0.2f),
-                    unfocusedContainerColor = Color.LightGray.copy(alpha = 0.2f)
-                )
-            )
-
-            Button(
-                onClick = { /* Add User */ },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(red = 0, green = 100, blue = 0)
-                )
+                    .fillMaxSize()
+                    .background(Color.White)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add",
-                    tint = Color.White
+                Text(
+                    text = "Users",
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(20.dp)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = "ADD USER", color = Color.White)
-            }
 
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            LazyColumn {
-                items(users) { user ->
-                    UserCard(
-                        user = user,
-                        onReportToggle = {
-                            val index = users.indexOfFirst { it.id == user.id }
-                            if (index != -1) {
-                                users[index] = user.copy(reported = !user.reported)
-                            }
-                        }
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    TextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        placeholder = { Text("Search users...") },
+                        shape = CircleShape,
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.LightGray.copy(alpha = 0.2f),
+                            unfocusedContainerColor = Color.LightGray.copy(alpha = 0.2f)
+                        )
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Button(
+                        onClick = { userPageState = UserPageState.Add },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(red = 0, green = 100, blue = 0)
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add",
+                            tint = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "ADD USER", color = Color.White)
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    LazyColumn {
+                        val filteredUsers = users.filter {
+                            it.name.contains(searchQuery, ignoreCase = true) ||
+                                    it.email.contains(searchQuery, ignoreCase = true) ||
+                                    it.phoneNumber?.contains(searchQuery, ignoreCase = true) == true
+                        }
+
+                        items(filteredUsers) { user ->
+                            UserCard(
+                                user = user,
+                                onEdit = { userPageState = UserPageState.Edit(user) },
+                                onDelete = { viewModel.deleteUser(user) }
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
                 }
             }
         }
+
+        is UserPageState.Add -> {
+            AddUserScreen(
+                onSave = { newUser ->
+                    viewModel.addUser(newUser)
+                    userPageState = UserPageState.List
+                },
+                onCancel = { userPageState = UserPageState.List }
+            )
+        }
+
+        is UserPageState.Edit -> {
+            EditUserScreen(
+                user = state.user,
+                onSave = { updatedUser ->
+                    viewModel.updateUser(updatedUser)
+                    userPageState = UserPageState.List
+                },
+                onCancel = { userPageState = UserPageState.List }
+            )
+        }
     }
 }
+
 @Composable
-fun UserCard(user: User, onReportToggle: () -> Unit) {
+fun UserCard(user: RoomUser, onEdit: () -> Unit, onDelete: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFDCDCDC) // Gray background
-        )
+            containerColor = Color(0xFFE0E0E0)
+        ),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, Color.Black)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -124,78 +152,73 @@ fun UserCard(user: User, onReportToggle: () -> Unit) {
                 .padding(16.dp)
                 .fillMaxWidth()
         ) {
-            // Column 1: Emoji
+            // 1. Emoji
             Column(
-                modifier = Modifier.weight(0.5f),
+                modifier = Modifier.weight(0.7f),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
-                        .background(Color.Gray.copy(alpha = 0.3f), CircleShape),
+                        .size(40.dp)
+                        .background(Color(0xFFF5F5F5), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = user.emoji, style = MaterialTheme.typography.headlineMedium)
+                    Text(text = user.emoji, fontSize = 28.sp, color = Color.Black)
                 }
             }
-
-            // Column 2: Name & Phone
+            // 2. Name (top), Email (bottom)
             Column(
-                modifier = Modifier.weight(2f)
-                    .padding(horizontal = 8.dp)
+                modifier = Modifier.weight(2f).padding(horizontal = 8.dp),
+                verticalArrangement = Arrangement.Center
             ) {
                 Text(
                     text = user.name,
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                    color = Color.Black
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = user.phone,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
-                )
-            }
-
-            // Column 3: Email & Report
-            Column(
-                modifier = Modifier.weight(2f)
-                    .padding(end = 8.dp)
-            ) {
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = user.email,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = if (user.reported) "REPORTED" else "NOT-REPORTED",
-                    color = if (user.reported) Color.Red else Color.Green,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Black
                 )
             }
-
+            // 3. Phone (top), Reported (bottom)
             Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.End
+                modifier = Modifier.weight(1.2f),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                IconButton(
-                    onClick = { /* Edit */ },
-                    modifier = Modifier.size(32.dp)
-                ) {
+                Text(
+                    text = user.phoneNumber ?: "No phone",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Black
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Reported: " + if (user.reported.equals("yes", true) || user.reported.equals("true", true)) "Yes" else "No",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (user.reported.equals("yes", true) || user.reported.equals("true", true)) Color.Red else Color.Black
+                )
+            }
+            // 4. Edit (top), Delete (bottom)
+            Column(
+                modifier = Modifier.weight(0.8f),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                IconButton(onClick = onEdit) {
                     Icon(
-                        Icons.Default.Edit,
+                        imageVector = Icons.Default.Edit,
                         contentDescription = "Edit",
-                        tint = Color.DarkGray
+                        tint = Color.Black
                     )
                 }
-                IconButton(
-                    onClick = onReportToggle,
-                    modifier = Modifier.size(32.dp)
-                ) {
+                IconButton(onClick = onDelete) {
                     Icon(
-                        Icons.Default.Delete,
+                        imageVector = Icons.Default.Delete,
                         contentDescription = "Delete",
-                        tint = if (user.reported) Color.Red else Color.DarkGray
+                        tint = if (user.reported.equals("yes", true) || user.reported.equals("true", true)) Color.Red else Color.Black
                     )
                 }
             }
