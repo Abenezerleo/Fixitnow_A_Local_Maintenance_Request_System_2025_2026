@@ -36,9 +36,8 @@ fun DashboardScreen() {
     val viewModel: DashboardViewModel = viewModel()
     
     // Collect all the counts from the ViewModel
-    val totalUsers by viewModel.totalUserCount.collectAsState(initial = 0)
-    val activeUsers by viewModel.activeUserCount.collectAsState(initial = 0)
-    val availableProviders by viewModel.availableProviderCount.collectAsState(initial = 0)
+    val totalRequesters by viewModel.totalRequesterCount.collectAsState(initial = 0)
+    val totalProviders by viewModel.totalProviderCount.collectAsState(initial = 0)
     val totalRequests by viewModel.totalRequestCount.collectAsState(initial = 0)
     val completedRequests by viewModel.completedRequestCount.collectAsState(initial = 0)
     val pendingRequests by viewModel.pendingRequestCount.collectAsState(initial = 0)
@@ -78,7 +77,7 @@ fun DashboardScreen() {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            MetricCard(title = "Total Users", value = totalUsers.toString())
+            MetricCard(title = "Total Requesters", value = totalRequesters.toString())
             MetricCard(title = "Pending Requests", value = pendingRequests.toString())
         }
 
@@ -89,7 +88,7 @@ fun DashboardScreen() {
                 .padding(top = 16.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            MetricCard(title = "Available Providers", value = availableProviders.toString())
+            MetricCard(title = "Total Providers", value = totalProviders.toString())
             MetricCard(title = "Completed Requests", value = completedRequests.toString())
         }
 

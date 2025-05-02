@@ -1,124 +1,199 @@
 package com.example.assigment.ui.theme.others
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.assigment.ui.theme.Entity.User
-import com.example.assigment.ui.theme.Enum.UserType
+import com.example.assigment.ui.theme.Entity.Account
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditUserScreen(user: User, onSave: (User) -> Unit, onCancel: () -> Unit) {
-    var name by remember { mutableStateOf(user.name) }
-    var email by remember { mutableStateOf(user.email) }
-    var phone by remember { mutableStateOf(user.phoneNumber ?: "") }
-    var userType by remember { mutableStateOf<UserType>(user.userType) }
-    var userTypeExpanded by remember { mutableStateOf(false) }
+fun EditUserScreen(
+    user: Account,
+    onUpdateUser: (String, String, String, String, String) -> Unit,
+    onCancel: () -> Unit
+) {
+    var fullName by remember { mutableStateOf(user.fullName ?: "") }
+    var email by remember { mutableStateOf(user.email ?: "") }
+    var phoneNumber by remember { mutableStateOf(user.phoneNumber ?: "") }
+    var password by remember { mutableStateOf("") }
+    var gender by remember { mutableStateOf(user.gender ?: "") }
+    var expanded by remember { mutableStateOf(false) }
+    val genders = listOf("👨 Male", "👩 Female")
 
-    // Validation
-    val isEmailValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() && email.endsWith("@gmail.com", ignoreCase = true)
-    val emailError = if (!isEmailValid) "Email must be a valid @gmail.com address" else null
-    val isPhoneValid = phone.length == 10 && phone.all { it.isDigit() }
-    val phoneError = if (!isPhoneValid) "Phone number must be exactly 10 digits" else null
-    val isFormValid = isEmailValid && isPhoneValid && name.isNotBlank()
+    var emailError by remember { mutableStateOf<String?>(null) }
+    var phoneError by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.Center
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "Edit User", fontSize = 28.sp, fontWeight = FontWeight.Bold)
-
-        Spacer(modifier = Modifier.height(16.dp))
-        TextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Name") },
-            modifier = Modifier.fillMaxWidth()
+        Text(
+            text = "Edit User",
+            fontSize = 24.sp,
+            modifier = Modifier.padding(bottom = 16.dp)
         )
-        Spacer(modifier = Modifier.height(8.dp))
-        TextField(
+
+        OutlinedTextField(
+            value = fullName,
+            onValueChange = { fullName = it },
+            label = { Text("Full Name") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            shape = CircleShape,
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.LightGray.copy(alpha = 0.2f),
+                unfocusedContainerColor = Color.LightGray.copy(alpha = 0.2f)
+            )
+        )
+
+        OutlinedTextField(
             value = email,
-            onValueChange = { email = it },
+            onValueChange = { 
+                email = it
+                emailError = if (!it.matches(Regex("^[A-Za-z0-9._%+-]+@gmail\\.com$"))) {
+                    "Email must be in format: example@gmail.com"
+                } else null
+            },
             label = { Text("Email") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            shape = CircleShape,
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.LightGray.copy(alpha = 0.2f),
+                unfocusedContainerColor = Color.LightGray.copy(alpha = 0.2f)
+            ),
             isError = emailError != null,
-            supportingText = { if (emailError != null) Text(emailError, color = Color.Red) },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        TextField(
-            value = phone,
-            onValueChange = { phone = it },
-            label = { Text("Phone") },
-            isError = phoneError != null,
-            supportingText = { if (phoneError != null) Text(phoneError, color = Color.Red) },
-            modifier = Modifier.fillMaxWidth()
+            supportingText = {
+                if (emailError != null) {
+                    Text(
+                        text = emailError!!,
+                        color = Color.Red
+                    )
+                }
+            }
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value = phoneNumber,
+            onValueChange = { 
+                if (it.length <= 10) {
+                    phoneNumber = it
+                    phoneError = if (it.length != 10) {
+                        "Phone number must be 10 digits"
+                    } else null
+                }
+            },
+            label = { Text("Phone Number") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            shape = CircleShape,
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.LightGray.copy(alpha = 0.2f),
+                unfocusedContainerColor = Color.LightGray.copy(alpha = 0.2f)
+            ),
+            isError = phoneError != null,
+            supportingText = {
+                if (phoneError != null) {
+                    Text(
+                        text = phoneError!!,
+                        color = Color.Red
+                    )
+                }
+            }
+        )
+
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("New Password (leave empty to keep current)") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            shape = CircleShape,
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.LightGray.copy(alpha = 0.2f),
+                unfocusedContainerColor = Color.LightGray.copy(alpha = 0.2f)
+            )
+        )
+
         ExposedDropdownMenuBox(
-            expanded = userTypeExpanded,
-            onExpandedChange = { userTypeExpanded = !userTypeExpanded }
+            expanded = expanded,
+            onExpandedChange = { expanded = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
         ) {
-            TextField(
-                value = userType.name,
+            OutlinedTextField(
+                value = gender,
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("User Type") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = userTypeExpanded) },
-                modifier = Modifier.menuAnchor().fillMaxWidth()
+                label = { Text("Gender") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(),
+                shape = CircleShape,
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.LightGray.copy(alpha = 0.2f),
+                    unfocusedContainerColor = Color.LightGray.copy(alpha = 0.2f)
+                )
             )
 
             ExposedDropdownMenu(
-                expanded = userTypeExpanded,
-                onDismissRequest = { userTypeExpanded = false }
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
             ) {
-                UserType.values().forEach { type ->
+                genders.forEach { option ->
                     DropdownMenuItem(
-                        text = { Text(type.name) },
+                        text = { Text(option) },
                         onClick = {
-                            userType = type
-                            userTypeExpanded = false
+                            gender = option
+                            expanded = false
                         }
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-        Row {
-            Button(
-                onClick = {
-                    onSave(
-                        user.copy(
-                            name = name,
-                            email = email,
-                            phoneNumber = phone,
-                            userType = userType
-                        )
-                    )
-                },
-                enabled = isFormValid,
-                modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006400))
-            ) {
-                Text("Save", color = Color.White)
-            }
-            Spacer(modifier = Modifier.width(8.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
             Button(
                 onClick = onCancel,
-                modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF0000))
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Red
+                )
             ) {
-                Text("Cancel", color = Color.White)
+                Text("Cancel")
+            }
+
+            Button(
+                onClick = {
+                    if (emailError == null && phoneError == null && gender.isNotEmpty()) {
+                        onUpdateUser(fullName, email, phoneNumber, password, gender)
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(red = 0, green = 100, blue = 0)
+                ),
+                enabled = emailError == null && phoneError == null && gender.isNotEmpty()
+            ) {
+                Text("Update User")
             }
         }
     }
-}
+} 

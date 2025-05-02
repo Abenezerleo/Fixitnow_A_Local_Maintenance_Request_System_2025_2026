@@ -20,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.assigment.ui.theme.Entity.ServiceProvider
+import com.example.assigment.ui.theme.Entity.Account
 import com.example.assigment.ui.theme.Enum.ServiceType
 import com.example.assigment.ui.theme.Enum.StatusType
 import com.example.assigment.ui.theme.ViewModel.ServiceProviderViewModel
@@ -38,14 +38,14 @@ val Green = Color(0xFF006400)
 sealed class ProviderPageState {
     object List : ProviderPageState()
     object Add : ProviderPageState()
-    data class Edit(val provider: ServiceProvider) : ProviderPageState()
+    data class Edit(val provider: Account) : ProviderPageState()
 }
 
 @Composable
 fun ProviderScreen(viewModel: ServiceProviderViewModel = viewModel()) {
     var searchQuery by remember { mutableStateOf("") }
     var providerPageState by remember { mutableStateOf<ProviderPageState>(ProviderPageState.List) }
-    val providers by viewModel.allProviders.collectAsState(initial = emptyList())
+    val providers by viewModel.providers.collectAsState(initial = emptyList())
 
     when (providerPageState) {
         is ProviderPageState.List -> {
@@ -106,79 +106,49 @@ fun ProviderScreen(viewModel: ServiceProviderViewModel = viewModel()) {
                     Spacer(modifier = Modifier.height(8.dp))
 
                     LazyColumn {
-                        items(providers.filter { it.name?.contains(searchQuery, ignoreCase = true) == true }) { provider ->
+                        items(providers.filter { 
+                            it.fullName?.contains(searchQuery, ignoreCase = true) == true ||
+                            it.email?.contains(searchQuery, ignoreCase = true) == true
+                        }) { provider ->
                             ProviderCard(
                                 provider = provider,
-                                onReportToggle = {}
+                                onEdit = { providerPageState = ProviderPageState.Edit(provider) },
+                                onDelete = { viewModel.deleteProvider(provider.accountId) }
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                OutlinedButton(
-                                    onClick = { providerPageState = ProviderPageState.Edit(provider) },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(8.dp),
-                                    border = BorderStroke(1.dp, LightGray),
-                                    colors = ButtonDefaults.outlinedButtonColors(
-                                        containerColor = White,
-                                        contentColor = Black
-                                    )
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Edit,
-                                        contentDescription = "Edit",
-                                        tint = Black
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Edit", color = Black)
-                                }
-
-                                OutlinedButton(
-                                    onClick = { viewModel.deleteProvider(provider) },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(8.dp),
-                                    border = BorderStroke(1.dp, LightGray),
-                                    colors = ButtonDefaults.outlinedButtonColors(
-                                        containerColor = White,
-                                        contentColor = Black
-                                    )
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Delete,
-                                        contentDescription = "Delete",
-                                        tint = Black
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Delete", color = Black)
-                                }
-                            }
-
                             Spacer(modifier = Modifier.height(16.dp))
                         }
                     }
                 }
             }
         }
-
         is ProviderPageState.Add -> {
             AddProviderScreen(
-                onSave = { newProvider ->
-                    viewModel.addProvider(newProvider)
+                onAddProvider = { fullName, email, phoneNumber, password, gender ->
+                    viewModel.addProvider(
+                        fullName = fullName,
+                        email = email,
+                        phoneNumber = phoneNumber,
+                        password = password,
+                        gender = gender,
+                    )
                     providerPageState = ProviderPageState.List
                 },
                 onCancel = { providerPageState = ProviderPageState.List }
             )
         }
-
         is ProviderPageState.Edit -> {
-            val providerToEdit = (providerPageState as ProviderPageState.Edit).provider
+            val provider = (providerPageState as ProviderPageState.Edit).provider
             EditProviderScreen(
-                provider = providerToEdit,
-                onSave = { updatedProvider ->
-                    viewModel.updateProvider(updatedProvider)
+                provider = provider,
+                onUpdateProvider = { fullName, email, phoneNumber, password, gender ->
+                    viewModel.updateProvider(
+                        accountId = provider.accountId,
+                        fullName = fullName,
+                        email = email,
+                        phoneNumber = phoneNumber,
+                        password = password,
+                        gender = gender
+                    )
                     providerPageState = ProviderPageState.List
                 },
                 onCancel = { providerPageState = ProviderPageState.List }
@@ -188,59 +158,98 @@ fun ProviderScreen(viewModel: ServiceProviderViewModel = viewModel()) {
 }
 
 @Composable
-fun ProviderCard(provider: ServiceProvider, onReportToggle: () -> Unit) {
+fun ProviderCard(
+    provider: Account,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 8.dp),
+        shape = RoundedCornerShape(0.dp),
+        border = BorderStroke(2.dp, LightGray),
         colors = CardDefaults.cardColors(
             containerColor = White
-        ),
-        shape = RoundedCornerShape(8.dp),
-        border = BorderStroke(1.dp, LightGray)
+        )
     ) {
-        Row(
+        Column(
             modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxWidth()
+                .padding(16.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(LightGray.copy(alpha = 0.3f), CircleShape),
-                contentAlignment = Alignment.Center
+            // Main row with three columns
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                // Left column - Emoji
                 Text(
-                    text = if (provider.gender == "Female") "👩‍🔧" else "👨‍🔧",
-                    style = MaterialTheme.typography.headlineMedium
+                    text = if (provider.gender?.contains("Male") == true) "👨‍🔧" else "👩‍🔧",
+                    fontSize = 32.sp
+                )
+                
+                // Middle column - Name and Jobs
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        text = provider.fullName ?: "Unknown",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Jobs: ${provider.totalJobsCompleted ?: 0}",
+                        fontSize = 16.sp,
+                        color = Color.Gray
+                    )
+                }
+                
+                // Right column - Rating
+                Text(
+                    text = "${provider.rating ?: 0} Stars",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(
-                modifier = Modifier.weight(1f)
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Edit and Delete buttons taking full width
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = provider.name ?: "",
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = provider.serviceType.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = LightGray
-                )
+                OutlinedButton(
+                    onClick = onEdit,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(0.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Black
+                    ),
+                    border = BorderStroke(1.dp, Black)
+                ) {
+                    Icon(Icons.Default.Edit, contentDescription = "Edit")
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Edit")
+                }
+                
+                OutlinedButton(
+                    onClick = onDelete,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(0.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Black
+                    ),
+                    border = BorderStroke(1.dp, Black)
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = "Delete")
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Delete")
+                }
             }
-
-            Text(
-                text = "${provider.rating} Star",
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = Black
-                )
-            )
         }
     }
 }

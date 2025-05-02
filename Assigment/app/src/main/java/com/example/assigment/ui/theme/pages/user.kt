@@ -20,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.assigment.ui.theme.Entity.User as RoomUser
+import com.example.assigment.ui.theme.Entity.Account
 import com.example.assigment.ui.theme.ViewModel.UserViewModel
 import com.example.assigment.ui.theme.others.AddUserScreen
 import com.example.assigment.ui.theme.others.EditUserScreen
@@ -29,13 +29,13 @@ import com.example.assigment.ui.theme.others.EditUserScreen
 sealed class UserPageState {
     object List : UserPageState()
     object Add : UserPageState()
-    data class Edit(val user: RoomUser) : UserPageState()
+    data class Edit(val user: Account) : UserPageState()
 }
 
 @Composable
 fun UserScreen() {
     val viewModel: UserViewModel = viewModel()
-    val users by viewModel.allUsers.collectAsState(initial = emptyList())
+    val users by viewModel.accounts.collectAsState(initial = emptyList())
     var searchQuery by remember { mutableStateOf("") }
     var userPageState by remember { mutableStateOf<UserPageState>(UserPageState.List) }
 
@@ -80,52 +80,56 @@ fun UserScreen() {
                             containerColor = Color(red = 0, green = 100, blue = 0)
                         )
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add",
-                            tint = Color.White
-                        )
+                        Icon(Icons.Default.Add, contentDescription = "Add User")
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = "ADD USER", color = Color.White)
+                        Text("Add User")
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     LazyColumn {
-                        val filteredUsers = users.filter {
-                            it.name.contains(searchQuery, ignoreCase = true) ||
-                                    it.email.contains(searchQuery, ignoreCase = true) ||
-                                    it.phoneNumber?.contains(searchQuery, ignoreCase = true) == true
-                        }
-
-                        items(filteredUsers) { user ->
+                        items(users.filter { 
+                            it.fullName?.contains(searchQuery, ignoreCase = true) == true ||
+                            it.email?.contains(searchQuery, ignoreCase = true) == true
+                        }) { user ->
                             UserCard(
                                 user = user,
                                 onEdit = { userPageState = UserPageState.Edit(user) },
-                                onDelete = { viewModel.deleteUser(user) }
+                                onDelete = { viewModel.deleteUser(user.accountId) }
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
                         }
                     }
                 }
             }
         }
-
         is UserPageState.Add -> {
             AddUserScreen(
-                onSave = { newUser ->
-                    viewModel.addUser(newUser)
+                onAddUser = { fullName, email, phoneNumber, password, gender ->
+                    viewModel.addUser(
+                        fullName = fullName,
+                        email = email,
+                        phoneNumber = phoneNumber,
+                        password = password,
+                        gender = gender
+                    )
                     userPageState = UserPageState.List
                 },
                 onCancel = { userPageState = UserPageState.List }
             )
         }
-
         is UserPageState.Edit -> {
+            val user = state.user
             EditUserScreen(
-                user = state.user,
-                onSave = { updatedUser ->
-                    viewModel.updateUser(updatedUser)
+                user = user,
+                onUpdateUser = { fullName, email, phoneNumber, password, gender ->
+                    viewModel.updateUser(
+                        accountId = user.accountId,
+                        fullName = fullName,
+                        email = email,
+                        phoneNumber = phoneNumber,
+                        password = password,
+                        gender = gender
+                    )
                     userPageState = UserPageState.List
                 },
                 onCancel = { userPageState = UserPageState.List }
@@ -135,91 +139,59 @@ fun UserScreen() {
 }
 
 @Composable
-fun UserCard(user: RoomUser, onEdit: () -> Unit, onDelete: () -> Unit) {
+fun UserCard(
+    user: Account,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFE0E0E0)
-        ),
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, Color.Black)
+            .padding(vertical = 8.dp),
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, Color.LightGray)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
             modifier = Modifier
-                .padding(16.dp)
                 .fillMaxWidth()
+                .padding(16.dp)
         ) {
-            // 1. Emoji
-            Column(
-                modifier = Modifier.weight(0.7f),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(Color(0xFFF5F5F5), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = user.emoji, fontSize = 28.sp, color = Color.Black)
-                }
-            }
-            // 2. Name (top), Email (bottom)
-            Column(
-                modifier = Modifier.weight(2f).padding(horizontal = 8.dp),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = user.name,
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                    color = Color.Black
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = user.email,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Black
-                )
-            }
-            // 3. Phone (top), Reported (bottom)
-            Column(
-                modifier = Modifier.weight(1.2f),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = user.phoneNumber ?: "No phone",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Black
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "Reported: " + if (user.reported.equals("yes", true) || user.reported.equals("true", true)) "Yes" else "No",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (user.reported.equals("yes", true) || user.reported.equals("true", true)) Color.Red else Color.Black
-                )
-            }
-            // 4. Edit (top), Delete (bottom)
-            Column(
-                modifier = Modifier.weight(0.8f),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                IconButton(onClick = onEdit) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit",
-                        tint = Color.Black
+                Column {
+                    Text(
+                        text = if (user.gender?.contains("Male") == true) "👨" else "👩",
+                        fontSize = 24.sp
+                    )}
+                Column {
+                    Text(
+                        text = user.fullName ?: "Unknown",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = user.email ?: "No email",
+                        fontSize = 14.sp,
+                        color = Color.Gray
+                    )}
+                Column {
+                    Text(
+                        text = user.phoneNumber ?: "No phone",
+                        fontSize = 14.sp,
+                        color = Color.Gray
                     )
                 }
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        tint = if (user.reported.equals("yes", true) || user.reported.equals("true", true)) Color.Red else Color.Black
-                    )
+                Column {
+                    IconButton(onClick = onEdit) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit User")
+                    }
+                    IconButton(onClick = onDelete) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete User")
+                    }
                 }
             }
         }
