@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FixItNow</string>
+    <string name="login">Login</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="admin_dashboard">Admin Dashboard</string>
+    <string name="requester_dashboard">Requester Dashboard</string>
+    <string name="provider_dashboard">Provider Dashboard</string>
+    <string name="register">Register</string>
+    <string name="register_prompt">Don\'t have an account?</string>
+    <string name="requester">Requester</string>
+    <string name="provider">Provider</string>
+    <string name="error_invalid_credentials">Invalid username or password</string>
+    <string name="error_username_exists">Username already exists</string>
+    <string name="error_passwords_dont_match">Passwords do not match</string>
+    <string name="error_username_required">Username is required</string>
+    <string name="error_password_required">Password is required</string>
+    <string name="error_user_type_required">Please select a user type</string>
+    <string name="registration_success">Registration successful</string>
+    <string name="select_user_type">Select User Type</string>
+</resources> 
