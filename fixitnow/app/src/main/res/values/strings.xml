@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FixItNow</string>
+    <string name="login">Login</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="admin_dashboard">Admin Dashboard</string>
+    <string name="user_dashboard">User Dashboard</string>
+</resources> 
