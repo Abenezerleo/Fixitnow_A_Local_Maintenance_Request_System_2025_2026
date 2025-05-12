@@ -1,0 +1,10 @@
+export declare enum ServiceType {
+    CLEANING = "CLEANING",
+    PLUMBING = "PLUMBING",
+    ELECTRICAL = "ELECTRICAL",
+    CARPENTRY = "CARPENTRY",
+    PAINTING = "PAINTING",
+    GARDENING = "GARDENING",
+    MOVING = "MOVING",
+    OTHER = "OTHER"
+}
